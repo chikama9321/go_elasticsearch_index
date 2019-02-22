@@ -1,12 +1,14 @@
 package main
 import (
 	"fmt"
+	"context"
     "github.com/aws/aws-sdk-go/aws"
     "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
     "github.com/aws/aws-sdk-go/service/sqs"
     "github.com/jinzhu/gorm"
-    _ "github.com/jinzhu/gorm/dialects/sqlite"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/olivere/elastic"
 )
 
 var svc *sqs.SQS
@@ -16,11 +18,33 @@ type User struct {
     Name string
 }
 
+const mapping = `
+{
+	"settings":{
+		"number_of_shards": 1,
+		"number_of_replicas": 0
+	},
+	"mappings":{
+		"user":{
+			"properties":{
+				"id":{
+					"type":"keyword"
+				},
+				"name":{
+					"type":"text"
+				}
+			}
+		}
+	}
+}`
+
 func main() {
 	fmt.Println("Start SQS")
 	setupSQS()
 	fmt.Println("Start DB")
 	setupDB()
+	fmt.Println("Start ES")
+	setupES()
 }
 
 func setupSQS() {
@@ -65,4 +89,31 @@ func setupDB() {
     db.AutoMigrate(&User{})
     db.Create(&User{Id: 1, Name: "Taro Yamada"})
     db.Create(&User{Id: 2, Name: "Taro Tanaka"})
+}
+
+func setupES() {
+	ctx := context.Background()
+	client, err := elastic.NewClient(
+    	elastic.SetURL("http://localhost:9200"),
+      	elastic.SetSniff(false),
+   	)
+   	if err != nil {
+    	panic(err)
+   	}
+   	defer client.Stop()
+	
+	exists, err := client.IndexExists("user").Do(ctx)
+	if err != nil {
+		panic(err)
+	}
+	
+	if exists {
+		if _, err := client.DeleteIndex("user").Do(ctx); err != nil {
+			panic(err)
+		}
+	}
+	
+	if _, err := client.CreateIndex("user").BodyString(mapping).Do(ctx); err != nil {
+		panic(err)
+	}
 }

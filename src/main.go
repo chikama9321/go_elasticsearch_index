@@ -1,29 +1,27 @@
 package main
 import (
-    "fmt"
+    "context"
+    "strconv"
     "github.com/aws/aws-sdk-go/aws"
     "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
     "github.com/aws/aws-sdk-go/service/sqs"
     "github.com/jinzhu/gorm"
     _ "github.com/jinzhu/gorm/dialects/sqlite"
-    "github.com/elastic/go-elasticsearch"
+    "github.com/olivere/elastic"
 )
 
 var svc *sqs.SQS
 
 type User struct {
-    Id int
-    Name string
+    Id int      `json:"id"`
+    Name string `json:"name"`
 }
 
 func main() {
     ids := dequeue()
     users := selectIndexData(ids)
-    fmt.Println("users", users)
-
-    es, _ := elasticsearch.NewDefaultClient()
-    fmt.Println(es.Info())
+    indexES(users)
 }
 
 /*
@@ -52,13 +50,11 @@ func dequeue() []string {
     })
 
     if err != nil {
-        fmt.Println("Error", err)
-        return []string{}
+        panic(err)
     }
 
     if len(result.Messages) == 0 {
-        fmt.Println("Received no messages")
-        return []string{}
+        panic(err)
     }
     
     ids := []string{}
@@ -71,7 +67,6 @@ func dequeue() []string {
     uniqueIds := make([]string, 0)
 
     for _, v := range ids {
-        // mapでは、第二引数にその値が入っているかどうかの真偽値が入っている
         if _, ok := m[v]; !ok {
             m[v] = struct{}{}
             uniqueIds = append(uniqueIds, v)
@@ -95,4 +90,31 @@ func selectIndexData(ids []string) []User {
     users := make([]User, 0)
     db.Where("id in (?)", ids).Find(&users)
     return users
+}
+
+/*
+* bulk index to elasticsearch
+*/
+func indexES(users []User) {
+    ctx := context.Background()
+	client, err := elastic.NewClient(
+    	elastic.SetURL("http://localhost:9200"),
+      	elastic.SetSniff(false),
+   	)
+   	if err != nil {
+    	panic(err)
+   	}
+    defer client.Stop()
+    
+    
+    bulkRequest := client.Bulk()
+    for _, user := range users {
+        idStr := strconv.Itoa(user.Id)
+        index := elastic.NewBulkIndexRequest().Index("user").Type("user").Id(idStr).Doc(user)
+        bulkRequest = bulkRequest.Add(index)
+    }
+
+    if _, err := bulkRequest.Do(ctx); err != nil {
+        panic(err)
+    }
 }

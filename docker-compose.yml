@@ -1,0 +1,10 @@
+elasticmq:
+  image: softwaremill/elasticmq
+  ports:
+    - 9324:9324    
+elasticsearch:
+  build: ./docker/elasticsearch
+  ports:
+    - 9200:9200
+    - 9300:9300    
+

@@ -6,5 +6,10 @@ elasticsearch:
   build: ./docker/elasticsearch
   ports:
     - 9200:9200
-    - 9300:9300    
+    - 9300:9300
+go:
+  build: ./docker/go
+  volumes:
+    - ./src:/go/src        
+  tty: true
 

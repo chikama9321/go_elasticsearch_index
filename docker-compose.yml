@@ -2,14 +2,24 @@ elasticmq:
   image: softwaremill/elasticmq
   ports:
     - 9324:9324    
+  environment:
+    - HOSTNAME_EXTERNAL=elasticmq  
 elasticsearch:
   build: ./docker/elasticsearch
   ports:
     - 9200:9200
     - 9300:9300
+  environment:
+    - HOSTNAME_EXTERNAL=elasticsearch  
 go:
   build: ./docker/go
   volumes:
-    - ./src:/go/src        
+    - ./src/main.go:/go/src/main.go
+    - ./src/createData.go:/go/src/createData.go        
   tty: true
+  environment:
+    - "GOPATH=/go"
+  links:
+    - elasticmq
+    - elasticsearch  
 

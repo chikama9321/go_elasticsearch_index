@@ -29,12 +29,12 @@ func main() {
 */
 func dequeue() []string {
     sess, err := session.NewSession(&aws.Config{
-        Endpoint: aws.String("http://localhost:9324"), 
+        Endpoint: aws.String("http://elasticmq:9324"), 
         Credentials: credentials.AnonymousCredentials, 
         Region: aws.String("us-west-2")},
 	)
 	svc := sqs.New(sess)
-    qURL := "http://localhost:9324/queue/user"
+    qURL := "http://elasticmq:9324/queue/user"
 
     result, err := svc.ReceiveMessage(&sqs.ReceiveMessageInput{
         AttributeNames: []*string{
@@ -98,7 +98,7 @@ func selectIndexData(ids []string) []User {
 func indexES(users []User) {
     ctx := context.Background()
 	client, err := elastic.NewClient(
-    	elastic.SetURL("http://localhost:9200"),
+    	elastic.SetURL("http://elasticsearch:9200"),
       	elastic.SetSniff(false),
    	)
    	if err != nil {

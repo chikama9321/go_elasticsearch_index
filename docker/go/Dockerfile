@@ -1,5 +1,6 @@
 FROM golang:latest
-
-RUN go get -u github.com/aws/aws-sdk-go/...
-RUN go get -u github.com/jinzhu/gorm/...
-RUN go get -u github.com/olivere/elastic/...
+WORKDIR /go
+RUN go get "github.com/aws/aws-sdk-go"
+RUN go get "github.com/jinzhu/gorm"
+RUN go get "github.com/mattn/go-sqlite3"
+RUN go get "github.com/olivere/elastic"

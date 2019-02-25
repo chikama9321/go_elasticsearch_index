@@ -49,7 +49,7 @@ func main() {
 
 func setupSQS() {
 	sess, err := session.NewSession(&aws.Config{
-        Endpoint: aws.String("http://localhost:9324"), 
+        Endpoint: aws.String("http://elasticmq:9324"), 
         Credentials: credentials.AnonymousCredentials, 
         Region: aws.String("us-west-2")},
 	)
@@ -70,7 +70,7 @@ func setupSQS() {
     })
 
 	// create data
-	qURL := "http://localhost:9324/queue/user"
+	qURL := "http://elasticmq:9324/queue/user"
 	svc.SendMessage(&sqs.SendMessageInput{
         DelaySeconds: aws.Int64(10),
         MessageBody: aws.String("1"),
@@ -94,7 +94,7 @@ func setupDB() {
 func setupES() {
 	ctx := context.Background()
 	client, err := elastic.NewClient(
-    	elastic.SetURL("http://localhost:9200"),
+    	elastic.SetURL("http://elasticsearch:9200"),
       	elastic.SetSniff(false),
    	)
    	if err != nil {

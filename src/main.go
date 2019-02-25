@@ -1,5 +1,7 @@
 package main
 import (
+    "fmt"
+    "reflect"
     "context"
     "strconv"
     "github.com/aws/aws-sdk-go/aws"
@@ -116,5 +118,12 @@ func indexES(users []User) {
 
     if _, err := bulkRequest.Do(ctx); err != nil {
         panic(err)
+    }
+
+    searchResult, _ := client.Search().Index("user").Do(ctx)  
+    var ttyp User
+    for _, item := range searchResult.Each(reflect.TypeOf(ttyp)) {
+        t := item.(User)
+        fmt.Printf("User by", t)
     }
 }
